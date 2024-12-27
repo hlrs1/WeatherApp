@@ -35,14 +35,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weatherapp.ui.theme.WeatherAppTheme
 
-class LoginActivity : ComponentActivity() {
+class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             WeatherAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    LoginPage(
+                    RegisterPage(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -54,10 +54,14 @@ class LoginActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
-fun LoginPage(modifier: Modifier = Modifier) {
+fun RegisterPage(modifier: Modifier = Modifier) {
+    var nome by rememberSaveable { mutableStateOf("") }
+    Spacer(modifier = modifier.size(24.dp))
     var email by rememberSaveable { mutableStateOf("") }
     Spacer(modifier = modifier.size(24.dp))
     var password by rememberSaveable { mutableStateOf("") }
+    Spacer(modifier = modifier.size(24.dp))
+    var confirmacao by rememberSaveable { mutableStateOf("") }
     Spacer(modifier = modifier.size(24.dp))
     val activity = LocalContext.current as? Activity
     Spacer(modifier = modifier.size(24.dp))
@@ -71,12 +75,17 @@ fun LoginPage(modifier: Modifier = Modifier) {
             fontSize = 24.sp
         )
         OutlinedTextField(
+            value = nome,
+            label = { Text(text = "Digite seu nome") },
+            modifier = modifier.fillMaxWidth(),
+            onValueChange = { nome = it }
+        )
+        OutlinedTextField(
             value = email,
             label = { Text(text = "Digite seu e-mail") },
             modifier = modifier.fillMaxWidth(),
             onValueChange = { email = it }
         )
-
         OutlinedTextField(
             value = password,
             label = { Text(text = "Digite sua senha") },
@@ -84,38 +93,33 @@ fun LoginPage(modifier: Modifier = Modifier) {
             onValueChange = { password = it },
             visualTransformation = PasswordVisualTransformation()
         )
-        Spacer(modifier = modifier.size(24.dp))
+        OutlinedTextField(
+            value = confirmacao,
+            label = { Text(text = "Confirme sua senha") },
+            modifier = modifier.fillMaxWidth(),
+            onValueChange = { confirmacao = it },
+            visualTransformation = PasswordVisualTransformation()
+        )
         Row(modifier = modifier) {
             Button(
                 onClick = {
-                    Toast.makeText(activity, "Login OK!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(activity, "Usuário Registrado!", Toast.LENGTH_LONG).show()
                     activity?.startActivity(
-                        Intent(activity, MainActivity::class.java).setFlags(
+                        Intent(activity, LoginActivity::class.java).setFlags(
                             FLAG_ACTIVITY_SINGLE_TOP
                         )
                     )
                 },
-                enabled = email.isNotEmpty() && password.isNotEmpty()
+                enabled = email.isNotEmpty() && nome.isNotEmpty() && password.isNotEmpty() && confirmacao.isNotEmpty()
+                        && (password == confirmacao)
             ) {
-                Text("Login")
+                Text("Registrar")
             }
             Spacer(modifier = modifier.size(24.dp))
             Button(
                 onClick = { email = ""; password = "" }
             ) {
                 Text("Limpar")
-            }
-            Spacer(modifier = modifier.size(24.dp))
-            Button(
-                onClick = {
-                    activity?.startActivity(
-                        Intent(activity, RegisterActivity::class.java).setFlags(
-                            FLAG_ACTIVITY_SINGLE_TOP
-                        )
-                    )
-                }
-            ) {
-                Text("Registre-se")
             }
         }
     }
