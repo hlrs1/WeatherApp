@@ -14,9 +14,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.weatherapp.R
+import com.weatherapp.model.MainViewModel
 
 @Composable
-fun MapPage() {
+fun MapPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
+    val cityList = viewModel.cities
     Column(
         modifier = Modifier.fillMaxSize()
             .background(colorResource(id = R.color.purple_700))
