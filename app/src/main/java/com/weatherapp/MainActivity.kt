@@ -30,7 +30,7 @@ import com.weatherapp.ui.nav.BottomNavItem
 import com.weatherapp.ui.nav.MainNavHost
 import com.weatherapp.ui.theme.WeatherAppTheme
 
-class MainActivity : ComponentActivity() {
+class   MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
