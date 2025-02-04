@@ -6,10 +6,11 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.maps.model.LatLng
+import com.weatherapp.api.WeatherService
 import com.weatherapp.db.fb.FBDatabase
 
-class MainViewModel (private val db: FBDatabase): ViewModel(),
-    FBDatabase.Listener {
+class MainViewModel (private val db: FBDatabase,
+                     private val service : WeatherService): ViewModel(), FBDatabase.Listener {
     private val _cities = mutableStateListOf<City>()
     val cities
         get() = _cities.toList()
@@ -22,9 +23,7 @@ class MainViewModel (private val db: FBDatabase): ViewModel(),
     fun remove(city: City) {
         db.remove(city)
     }
-    fun add(name: String, location : LatLng? = null) {
-        db.add(City(name = name, location = location))
-    }
+
     override fun onUserLoaded(user: User) {
         _user.value = user
     }
@@ -37,13 +36,27 @@ class MainViewModel (private val db: FBDatabase): ViewModel(),
     override fun onCityRemoved(city: City) {
         _cities.remove(city)
     }
+    fun add(name: String) {
+        service.getLocation(name) { lat, lng ->
+            if (lat != null && lng != null) {
+                db.add(City(name = name, location = LatLng(lat, lng)))
+            }
+        }
+    }
+    fun add(location: LatLng) {
+        service.getName(location.latitude, location.longitude) { name ->
+            if (name != null) {
+                db.add(City(name = name, location = location))
+            }
+        }
+    }
 }
 
-class MainViewModelFactory(private val db : FBDatabase) :
+class MainViewModelFactory(private val db : FBDatabase, private val service : WeatherService) :
     ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-            return MainViewModel(db) as T
+            return MainViewModel(db, service) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
