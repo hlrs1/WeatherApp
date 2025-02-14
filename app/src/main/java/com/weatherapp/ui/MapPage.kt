@@ -20,6 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getDrawable
+import androidx.core.graphics.drawable.toBitmap
+import androidx.core.graphics.scale
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -35,12 +38,12 @@ import com.weatherapp.model.MainViewModel
 @Composable
 fun MapPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
 
+    val context = LocalContext.current
     val camPosState = rememberCameraPositionState ()
     val recife = LatLng(-8.05, -34.9)
     val caruaru = LatLng(-8.27, -35.98)
     val joaopessoa = LatLng(-7.12, -34.84)
 
-    val context = LocalContext.current
     val hasLocationPermission by remember { mutableStateOf(
         ContextCompat.checkSelfPermission(context,
             Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
@@ -77,12 +80,25 @@ fun MapPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
 
         viewModel.cities.forEach {
             if (it.location != null) {
+                val drawable = getDrawable(context, R.drawable.loading)
+                val bitmap = drawable?.toBitmap(300, 200)
+                var marker = if (bitmap != null)
+                    BitmapDescriptorFactory.fromBitmap(bitmap)
+                else BitmapDescriptorFactory.defaultMarker()
                 if (it.weather == null) {
                     viewModel.loadWeather(it)
+                } else if (it.weather!!.bitmap == null) {
+                    viewModel.loadBitmap(it)
+                } else {
+                    marker = BitmapDescriptorFactory
+                        .fromBitmap(it.weather!!.bitmap!!.scale(150, 150))
                 }
-                Marker( state = MarkerState(position = it.location!!),
+                Marker(
+                    state = MarkerState(position = it.location!!),
+                    icon = marker,
                     title = it.name,
-                    snippet = it.weather?.desc?:"Carregando...")
+                    snippet = it.weather?.desc?:"carregando..."
+                )
             }
         }
     }
