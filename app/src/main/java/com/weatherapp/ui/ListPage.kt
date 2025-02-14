@@ -54,6 +54,7 @@ fun ListPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
                     )
                 )
             }, onClick = {
+                viewModel.city = city
                 Toast.makeText(activity, "Clicou", Toast.LENGTH_LONG).show()
                 activity?.startActivity(
                     Intent(activity, MainActivity::class.java).setFlags(
