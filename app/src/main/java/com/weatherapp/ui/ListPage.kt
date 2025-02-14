@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.weatherapp.MainActivity
 import com.weatherapp.model.City
 import com.weatherapp.model.MainViewModel
+import com.weatherapp.ui.nav.Route
 
 @Composable
 fun ListPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
@@ -55,6 +56,7 @@ fun ListPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
                 )
             }, onClick = {
                 viewModel.city = city
+                viewModel.page = Route.Home
                 Toast.makeText(activity, "Clicou", Toast.LENGTH_LONG).show()
                 activity?.startActivity(
                     Intent(activity, MainActivity::class.java).setFlags(
