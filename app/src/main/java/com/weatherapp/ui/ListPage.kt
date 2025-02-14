@@ -42,6 +42,9 @@ fun ListPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
             .padding(8.dp)
     ) {
         items(cityList) { city ->
+            if (city.weather == null) {
+                viewModel.loadWeather(city)
+            }
             CityItem(city = city, onClose = {
                 viewModel.remove(city)
                 Toast.makeText(activity, "Fechou", Toast.LENGTH_LONG).show()
@@ -83,8 +86,7 @@ fun CityItem(
                 text = city.name,
                 fontSize = 24.sp)
             Text(modifier = Modifier,
-                text = city.weather?:"Carregando clima...",
-
+                text = city.weather?.desc?:"carregando...",
                 fontSize = 16.sp)
 
         }
