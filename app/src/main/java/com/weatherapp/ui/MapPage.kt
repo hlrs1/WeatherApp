@@ -40,9 +40,9 @@ fun MapPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
 
     val context = LocalContext.current
     val camPosState = rememberCameraPositionState ()
-    val recife = LatLng(-8.05, -34.9)
+    /*val recife = LatLng(-8.05, -34.9)
     val caruaru = LatLng(-8.27, -35.98)
-    val joaopessoa = LatLng(-7.12, -34.84)
+    val joaopessoa = LatLng(-7.12, -34.84)*/
 
     val hasLocationPermission by remember { mutableStateOf(
         ContextCompat.checkSelfPermission(context,
@@ -56,7 +56,7 @@ fun MapPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
         uiSettings = MapUiSettings(myLocationButtonEnabled = true)
     ) {
 
-        Marker(
+        /*Marker(
             state = MarkerState(position = recife),
             title = "Recife",
             snippet = "Marcador em Recife",
@@ -76,7 +76,7 @@ fun MapPage(modifier: Modifier = Modifier, viewModel: MainViewModel) {
             snippet = "Marcador em João Pessoa",
             icon = BitmapDescriptorFactory.defaultMarker(
                 BitmapDescriptorFactory.HUE_RED)
-        )
+        )*/
 
         viewModel.cities.forEach {
             if (it.location != null) {

@@ -50,9 +50,12 @@ fun HomePage(viewModel: MainViewModel) {
             return
         }
         Row {
-            Icon( imageVector = Icons.Filled.AccountBox,
-                contentDescription = "Localized description",
-                modifier = Modifier.size(150.dp) )
+            AsyncImage(
+                model = viewModel.city!!.weather?.imgUrl,
+                modifier = Modifier.size(75.dp),
+                error = painterResource(id = R.drawable.loading),
+                contentDescription = "Imagem"
+            )
             Column {
                 Spacer(modifier = Modifier.size(12.dp))
                 Text(text = viewModel.city?.name?:"Selecione uma cidade...",
