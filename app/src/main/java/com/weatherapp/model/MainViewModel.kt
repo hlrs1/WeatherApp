@@ -10,13 +10,14 @@ import com.google.android.gms.maps.model.LatLng
 import com.weatherapp.api.WeatherService
 import com.weatherapp.db.fb.FBDatabase
 import com.weatherapp.ui.nav.Route
+import kotlin.random.Random
 
 class MainViewModel (private val db: FBDatabase,
                      private val service : WeatherService): ViewModel(), FBDatabase.Listener {
     private var _city = mutableStateOf<City?>(null)
     var city: City?
         get() = _city.value
-        set(tmp) { _city = mutableStateOf(tmp?.copy()) }
+        set(tmp) { _city.value = tmp?.copy(salt = Random.nextLong()) }
 
     private var _page = mutableStateOf<Route>(Route.Home)
     var page: Route
@@ -50,6 +51,9 @@ class MainViewModel (private val db: FBDatabase,
         }
     }
     override fun onCityRemoved(city: City) { _cities.remove(city.name) }
+    override fun onUserSignOut() {
+        TODO("Not yet implemented")
+    }
 
     fun add(name: String) {
         service.getLocation(name) { lat, lng ->
@@ -64,6 +68,10 @@ class MainViewModel (private val db: FBDatabase,
                 db.add(City(name = name, location = location))
             }
         }
+    }
+
+    fun update(city: City) {
+        db.update(city)
     }
 
     fun loadWeather(city: City) {

@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,14 +84,7 @@ fun CityItem(
         modifier = modifier.fillMaxWidth().padding(8.dp).clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Substitui o Icon(...)
-        AsyncImage(
-            model = city.weather?.imgUrl,
-            modifier = Modifier.size(75.dp),
-            error = painterResource(id = R.drawable.loading),
-            contentDescription = "Imagem"
-        )
-        Spacer(modifier = Modifier.size(12.dp))
+
         Column(modifier = modifier.weight(1f)) {
             Text(modifier = Modifier,
                 text = city.name,
@@ -99,6 +94,14 @@ fun CityItem(
                 fontSize = 16.sp)
 
         }
+
+        Icon(
+            imageVector = if (city.isMonitored) Icons.Filled.Notifications else Icons.Outlined.Notifications,
+            contentDescription = "Monitorada?",
+            modifier = Modifier
+                .size(32.dp) // Tamanho ajustado
+                .padding(end = 8.dp) // Espaçamento entre os ícones
+        )
         IconButton(onClick = onClose) {
             Icon(Icons.Filled.Close, contentDescription = "Close")
         }
