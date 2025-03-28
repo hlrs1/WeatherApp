@@ -34,13 +34,22 @@ import com.weatherapp.ui.nav.Route
 import com.weatherapp.ui.theme.WeatherAppTheme
 import androidx.navigation.NavDestination.Companion.hasRoute
 import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.util.Consumer
+//import androidx.core.util.Consumer
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.weatherapp.api.WeatherService
 import com.weatherapp.db.fb.FBDatabase
 import com.weatherapp.model.MainViewModelFactory
+import com.weatherapp.monitor.ForecastMonitor
 
 
 class   MainActivity : ComponentActivity() {
@@ -48,12 +57,42 @@ class   MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Verifique e solicite a permissão para notificações
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasNotificationPermission = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasNotificationPermission) {
+                val PERMISSION_REQUEST_CODE = 101
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    PERMISSION_REQUEST_CODE
+                )
+            }
+        }
+
+
         setContent {
             val fbDB = remember { FBDatabase() }
             val weatherService = remember { WeatherService() }
-            val viewModel : MainViewModel = viewModel(
-                factory = MainViewModelFactory(fbDB, weatherService)
+            val forecastMonitor = remember { ForecastMonitor(applicationContext) }
+            val viewModel: MainViewModel = viewModel(
+                factory = MainViewModelFactory(fbDB, weatherService, forecastMonitor)
             )
+
+            DisposableEffect(Unit) {
+                val listener = Consumer<Intent> { intent ->
+                    val name = intent.getStringExtra("city")
+                    val city = viewModel.cities.find { it.name == name }
+                    viewModel.city = city
+                    viewModel.page = Route.Home
+                }
+                addOnNewIntentListener(listener)
+                onDispose { removeOnNewIntentListener(listener) }
+            }
 
             val navController = rememberNavController()
             var showDialog by remember { mutableStateOf(false) }
