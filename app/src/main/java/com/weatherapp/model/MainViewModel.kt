@@ -12,14 +12,15 @@ import com.weatherapp.model.Forecast
 import com.weatherapp.model.User
 import com.weatherapp.model.Weather
 import com.weatherapp.monitor.ForecastMonitor
+import com.weatherapp.repo.Repository
 import com.weatherapp.ui.nav.Route
 import kotlin.random.Random
 
 class MainViewModel(
-    private val db: FBDatabase,
+    private val db: Repository,
     private val service: WeatherService,
     private val monitor: ForecastMonitor
-) : ViewModel(), FBDatabase.Listener {
+) : ViewModel(), Repository.Listener {
 
     private val _cities = mutableStateMapOf<String, City>()
     val cities: List<City>
@@ -109,7 +110,7 @@ class MainViewModel(
     fun loadBitmap(city: City) {
         service.getBitmap(city.weather!!.imgUrl) { bitmap ->
             city.weather!!.bitmap = bitmap
-            onCityUpdate(city)
+            onCityUpdated(city)
         }
     }
 
@@ -121,7 +122,7 @@ class MainViewModel(
         _cities[city.name] = city
     }
 
-    override fun onCityUpdate(city: City) {
+    override fun onCityUpdated(city: City) {
         refresh(city)
         monitor.updateCity(city)
     }
@@ -160,7 +161,7 @@ class MainViewModel(
 }
 
 class MainViewModelFactory(
-    private val db : FBDatabase,
+    private val db : Repository,
     private val service : WeatherService,
     private val monitor: ForecastMonitor
 ) : ViewModelProvider.Factory {

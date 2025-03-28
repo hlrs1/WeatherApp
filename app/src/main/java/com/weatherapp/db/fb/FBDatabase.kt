@@ -12,7 +12,7 @@ class FBDatabase {
     interface Listener {
         fun onUserLoaded(user: User)
         fun onCityAdded(city: City)
-        fun onCityUpdate(city: City)
+        fun onCityUpdated(city: City)
         fun onCityRemoved(city: City)
         fun onUserSignOut()
     }
@@ -46,7 +46,7 @@ class FBDatabase {
                             DocumentChange.Type.ADDED ->
                                 listener?.onCityAdded(fbCity.toCity())
                             DocumentChange.Type.MODIFIED ->
-                                listener?.onCityUpdate(fbCity.toCity())
+                                listener?.onCityUpdated(fbCity.toCity())
                             DocumentChange.Type.REMOVED ->
                                 listener?.onCityRemoved(fbCity.toCity())
                         }
