@@ -81,7 +81,7 @@ class   MainActivity : ComponentActivity() {
             val fbDB = remember { FBDatabase() }
             val weatherService = remember { WeatherService() }
             val forecastMonitor = remember { ForecastMonitor(applicationContext) }
-            val localDB = remember { LocalDatabase(applicationContext, "weatherDB") }
+            val localDB = remember { LocalDatabase(applicationContext, "weatherDB_${Firebase.auth.currentUser?.uid}") }
             val repository = remember { Repository(fbDB,localDB) }
             val viewModel: MainViewModel = viewModel(
                 factory = MainViewModelFactory(repository, weatherService, forecastMonitor)
