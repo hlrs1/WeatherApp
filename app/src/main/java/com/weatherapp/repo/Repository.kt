@@ -1,43 +1,65 @@
 package com.weatherapp.repo
 
+import com.google.android.gms.maps.model.LatLng
 import com.weatherapp.db.fb.FBDatabase
+import com.weatherapp.db.fb.toFBCity
+import com.weatherapp.db.local.LocalCity
 import com.weatherapp.db.local.LocalDatabase
+import com.weatherapp.db.local.toCity
+import com.weatherapp.db.local.toLocalCity
 import com.weatherapp.model.City
 import com.weatherapp.model.User
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-class Repository (
+
+class Repository(
     private val fbDB: FBDatabase,
-    private val localDB : LocalDatabase
-) : FBDatabase.Listener {
-    interface Listener {
-        fun onUserLoaded(user: User)
-        fun onUserSignOut()
-        fun onCityAdded(city: City)
-        fun onCityUpdated(city: City)
-        fun onCityRemoved(city: City)
+    private val localDB: LocalDatabase
+) {
+    val user: Flow<User> = fbDB.user.map { fbUser ->
+        fbUser.toUser() // Converte FBUser para User
     }
-    private var listener : Listener? = null
-    fun setListener(listener: Listener? = null) {
-        this.listener = listener
+
+    val cities: Flow<List<City>> = localDB.cities.map { list ->
+        list.map { it.toCity() } // Converte LocalCity para City
     }
-    init {
-        fbDB.setListener(this)
+
+    fun add(city: City) {
+        val fbCity = city.toFBCity() // Converte City para FBCity
+        fbDB.add(fbCity)
+
+        val localCity = city.toLocalCity() // Converte City para LocalCity
+        localDB.insert(localCity)
     }
-    fun add(city: City) = fbDB.add(city)
-    fun remove(city: City) = fbDB.remove(city)
-    fun update(city: City) = fbDB.update(city)
-    override fun onUserLoaded(user: User) = listener?.onUserLoaded(user)?:Unit
-    override fun onUserSignOut() = listener?.onUserSignOut()?:Unit
-    override fun onCityAdded(city: City) {
-        localDB.insert(city)
-        listener?.onCityAdded(city)
+
+    fun remove(city: City) {
+        val fbCity = city.toFBCity()
+        fbDB.remove(fbCity)
+
+        val localCity = city.toLocalCity()
+        localDB.delete(localCity)
     }
-    override fun onCityUpdated(city: City) {
-        localDB.update(city)
-        listener?.onCityUpdated(city)
+
+    fun update(city: City) {
+        val fbCity = city.toFBCity()
+        fbDB.update(fbCity)
+
+        val localCity = city.toLocalCity()
+        localDB.update(localCity)
     }
-    override fun onCityRemoved(city: City) {
-        localDB.delete(city)
-        listener?.onCityRemoved(city)
-    }
+
+//    fun LocalCity.toCity() = City(
+//        name = this.name,
+//        location = LatLng(this.latitude, this.longitude),
+//        isMonitored = this.isMonitored
+//    )
+//    fun City.toLocalCity() = LocalCity(
+//        name = this.name,
+//        latitude = this.location?.latitude?:0.0,
+//        longitude = this.location?.longitude?:0.0,
+//        isMonitored = this.isMonitored
+//    )
+
 }
+

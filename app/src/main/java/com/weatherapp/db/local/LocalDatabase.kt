@@ -14,17 +14,25 @@ class LocalDatabase (context : Context, databaseName : String) {
         klass = LocalRoomDatabase::class.java,
         name = databaseName
     ).build()
+
     private var scope : CoroutineScope = CoroutineScope(Dispatchers.IO)
-    fun insert(city: City) = scope.launch {
-        roomDB.localCityDao().upsert(city.toLocalCity())
+
+    fun insert(city: LocalCity) = scope.launch {
+        roomDB.localCityDao().upsert(city)
     }
-    fun update(city: City) = scope.launch {
-        roomDB.localCityDao().upsert(city.toLocalCity())
+
+    fun update(city: LocalCity) = scope.launch {
+        roomDB.localCityDao().upsert(city)
     }
-    fun delete(city: City) = scope.launch {
-        roomDB.localCityDao().delete(city.toLocalCity())
+
+    fun delete(city: LocalCity) = scope.launch {
+        roomDB.localCityDao().delete(city)
     }
-    fun getCities() = roomDB.localCityDao().getCities().map {
-        list -> list.map { it.toCity() }
-    }
+
+
+//    fun getCities() = roomDB.localCityDao().getCities().map {
+//        list -> list.map { it.toCity() }
+//    }
+
+    val cities = roomDB.localCityDao().getCities()
 }
