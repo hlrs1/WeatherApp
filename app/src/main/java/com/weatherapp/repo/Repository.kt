@@ -1,65 +1,42 @@
-package com.weatherapp.repo
-
-import com.google.android.gms.maps.model.LatLng
 import com.weatherapp.db.fb.FBDatabase
 import com.weatherapp.db.fb.toFBCity
-import com.weatherapp.db.local.LocalCity
 import com.weatherapp.db.local.LocalDatabase
 import com.weatherapp.db.local.toCity
 import com.weatherapp.db.local.toLocalCity
 import com.weatherapp.model.City
-import com.weatherapp.model.User
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
-
-class Repository(
-    private val fbDB: FBDatabase,
-    private val localDB: LocalDatabase
+class Repository (
+    private val fbDB: FBDatabase, private val localDB : LocalDatabase
 ) {
-    val user: Flow<User> = fbDB.user.map { fbUser ->
-        fbUser.toUser() // Converte FBUser para User
+    private var ioScope : CoroutineScope = CoroutineScope(Dispatchers.IO)
+    // cache das cidades, usado para atualizar localDB
+    private var cityMap = emptyMap<String, City>()
+    val cities = localDB.cities.map {
+            list -> list.map { city -> city.toCity() } }
+    val user = fbDB.user.map { it.toUser() }
+    init {
+        ioScope.launch {
+            // Monitora fbDB e atualiza localDB com mudanças
+            // Detecta mudanças (inserções, alterações e deleções)
+            // e faz só o necessário
+            fbDB.cities.collect { fbCityList ->
+                val cityList = fbCityList.map { it.toCity() }
+                val nameList = cityList.map { it.name }
+                val deletedCities = cityMap.filter { it.key !in nameList}
+                val updatedCities = cityList.filter {it.name in cityMap.keys}
+                val newCities = cityList.filter { it.name !in cityMap.keys}
+                newCities.forEach {localDB.insert(it.toLocalCity())}
+                updatedCities.forEach {localDB.update(it.toLocalCity())}
+                deletedCities.forEach {localDB.delete(it.value.toLocalCity())}
+                cityMap = cityList.associateBy { it.name }
+            }
+        }
     }
-
-    val cities: Flow<List<City>> = localDB.cities.map { list ->
-        list.map { it.toCity() } // Converte LocalCity para City
-    }
-
-    fun add(city: City) {
-        val fbCity = city.toFBCity() // Converte City para FBCity
-        fbDB.add(fbCity)
-
-        val localCity = city.toLocalCity() // Converte City para LocalCity
-        localDB.insert(localCity)
-    }
-
-    fun remove(city: City) {
-        val fbCity = city.toFBCity()
-        fbDB.remove(fbCity)
-
-        val localCity = city.toLocalCity()
-        localDB.delete(localCity)
-    }
-
-    fun update(city: City) {
-        val fbCity = city.toFBCity()
-        fbDB.update(fbCity)
-
-        val localCity = city.toLocalCity()
-        localDB.update(localCity)
-    }
-
-//    fun LocalCity.toCity() = City(
-//        name = this.name,
-//        location = LatLng(this.latitude, this.longitude),
-//        isMonitored = this.isMonitored
-//    )
-//    fun City.toLocalCity() = LocalCity(
-//        name = this.name,
-//        latitude = this.location?.latitude?:0.0,
-//        longitude = this.location?.longitude?:0.0,
-//        isMonitored = this.isMonitored
-//    )
-
+    fun add(city: City) = fbDB.add(city.toFBCity())
+    fun remove(city: City) = fbDB.remove(city.toFBCity())
+    fun update(city: City) = fbDB.update(city.toFBCity())
 }
-

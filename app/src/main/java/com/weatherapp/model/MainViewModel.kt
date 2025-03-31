@@ -1,26 +1,29 @@
 package com.weatherapp.model
 
+import Repository
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.weatherapp.api.WeatherService
+import com.weatherapp.api.toWeather
 import com.weatherapp.db.fb.FBDatabase
 import com.weatherapp.model.City
 import com.weatherapp.model.Forecast
 import com.weatherapp.model.User
 import com.weatherapp.model.Weather
 import com.weatherapp.monitor.ForecastMonitor
-import com.weatherapp.repo.Repository
 import com.weatherapp.ui.nav.Route
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-class MainViewModel(
-    private val db: Repository,
+class MainViewModel (
+    private val repository: Repository,
     private val service: WeatherService,
-    private val monitor: ForecastMonitor
-) : ViewModel(), Repository.Listener {
+    private val monitor: ForecastMonitor): ViewModel() {
 
     private val _cities = mutableStateMapOf<String, City>()
     val cities: List<City>
@@ -36,105 +39,59 @@ class MainViewModel(
         get() = _user.value
 
     init {
-        db.setListener(this)
-    }
-
-    fun remove(city: City) {
-        db.remove(city)
-        _cities.remove(city.name)
-    }
-
-    fun add(name: String) {
-        service.getLocation(name) { lat, lng ->
-            if (lat != null && lng != null) {
-                val newCity = City(name = name, location = LatLng(lat, lng))
-                if (!_cities.containsKey(newCity.name)) {
-                    db.add(newCity)
-                    _cities[newCity.name] = newCity
-                }
+        viewModelScope.launch (Dispatchers.Main) {
+            repository.user.collect { user ->
+                _user.value = user.copy()
+            }
+        }
+        viewModelScope.launch (Dispatchers.Main) {
+            repository.cities.collect { list ->
+                val names = list.map { it.name }
+                val newCities = list.filter { it.name !in _cities.keys }
+                val oldCities = list.filter { it.name in _cities.keys }
+                _cities.keys.removeIf { it !in names } // remove cidades deletadas
+                newCities.forEach { _cities[it.name] = it } // adiciona cidades novas
+                oldCities.forEach { refresh(it) }
             }
         }
     }
 
-    fun add(location: LatLng) {
-        service.getName(location.latitude, location.longitude) { name ->
-            if (name != null) {
-                val newCity = City(name = name, location = location)
-                if (!_cities.containsKey(newCity.name)) {
-                    db.add(newCity)
-                    _cities[newCity.name] = newCity
-                }
-            }
-        }
+//    fun remove(city: City) {
+//        db.remove(city)
+//        _cities.remove(city.name)
+//    }
+
+    fun add(name: String) = viewModelScope.launch(Dispatchers.IO) {
+        val location = service.getLocation(name)?:return@launch
+        repository.add(City( name = name, location = location))
     }
+
+    fun add(location: LatLng) = viewModelScope.launch(Dispatchers.IO) {
+        val resultLocation = service.getLocation(location.toString()) ?: return@launch
+        repository.add(City(name = resultLocation.toString(), location = resultLocation))
+
+    }
+
 
     fun update(city: City) {
-        db.update(city)
+        repository.update(city)
         refresh(city)
         monitor.updateCity(city)
     }
 
-    fun loadWeather(city: City) {
-        service.getCurrentWeather(city.name) { apiWeather ->
-            val updatedCity = city.copy(
-                weather = Weather(
-                    date = apiWeather?.current?.last_updated ?: "...",
-                    desc = apiWeather?.current?.condition?.text ?: "...",
-                    temp = apiWeather?.current?.temp_c ?: -1.0,
-                    imgUrl = "https:" + (apiWeather?.current?.condition?.icon ?: "")
-                )
-            )
-
-            refresh(updatedCity)
-            monitor.updateCity(updatedCity)
-        }
-    }
-
-    fun loadForecast(city : City) {
-        service.getForecast(city.name) { result ->
-            city.forecast = result?.forecast?.forecastday?.map {
-                Forecast(
-                    date = it.date?:"00-00-0000",
-                    weather = it.day?.condition?.text?:"Erro carregando!",
-                    tempMin = it.day?.mintemp_c?:-1.0,
-                    tempMax = it.day?.maxtemp_c?:-1.0,
-                    imgUrl = ("https:" + it.day?.condition?.icon)
-                )
-            }
-
-            refresh(city)
-            monitor.updateCity(city)
-        }
-    }
-
-    fun loadBitmap(city: City) {
-        service.getBitmap(city.weather!!.imgUrl) { bitmap ->
-            city.weather!!.bitmap = bitmap
-            onCityUpdated(city)
-        }
-    }
-
-    override fun onUserLoaded(user: User) {
-        _user.value = user
-    }
-
-    override fun onCityAdded(city: City) {
-        _cities[city.name] = city
-    }
-
-    override fun onCityUpdated(city: City) {
+    fun loadWeather(city: City) = viewModelScope.launch(Dispatchers.IO) {
+        city.weather = service.getCurrentWeather(city.name)?.toWeather()
         refresh(city)
-        monitor.updateCity(city)
     }
 
-    override fun onCityRemoved(city: City) {
-        _cities.remove(city.name)
+    fun loadForecast(city: City) = viewModelScope.launch(Dispatchers.IO) {
+        city.forecast = service.getForecast(city.name)?.forecast as List<Forecast>?
+        refresh(city)
+    }
 
-        if (_city.value?.name == city.name) {
-            _city.value = null
-        }
-
-        monitor.cancelCity(city)
+    fun loadBitmap(city: City) = viewModelScope.launch(Dispatchers.IO) {
+        service.getBitmap(city.weather!!.imgUrl)
+        refresh(city)
     }
 
     private fun refresh(city: City) {
@@ -146,6 +103,7 @@ class MainViewModel(
         if (_city.value?.name == city.name) _city.value = copy
         _cities.remove(city.name)
         _cities[city.name] = copy
+        monitor.updateCity(copy)
     }
 
     private var _page = mutableStateOf<Route>(Route.Home)
@@ -153,11 +111,6 @@ class MainViewModel(
         get() = _page.value
         set(tmp) { _page.value = tmp }
 
-    override fun onUserSignOut() {
-        monitor.cancelAll()
-        _user.value = null
-        _cities.clear()
-    }
 }
 
 class MainViewModelFactory(

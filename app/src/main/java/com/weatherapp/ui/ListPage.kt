@@ -52,7 +52,7 @@ fun ListPage(
             }
 
             CityItem(city = city, onClose = {
-                viewModel.remove(city)
+                viewModel.loadWeather(city)
             }, onClick = {
                 viewModel.city = city
                 viewModel.page = Route.Home
